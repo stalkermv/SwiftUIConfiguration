@@ -7,40 +7,53 @@ on:
     branches: [ main ]
 
 jobs:
-  test-macos:
-    name: macOS Tests
+  test:
+    name: Test Swift ${{ matrix.swift-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [macos-14, macos-15]
+        swift-version: ["6.1"]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift ${{ matrix.swift-version }}
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: ${{ matrix.swift-version }}
+        
+    - name: Swift version
+      run: swift --version
+      
+    - name: Resolve dependencies
+      run: swift package resolve
+      
+    - name: Build package
+      run: swift build
+      
+    - name: Run tests
+      run: swift test --parallel
+      
+  package-compatibility:
+    name: Package Compatibility
     runs-on: macos-15
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: "6.1"
         
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
-        
-      - name: Swift Version
-        run: swift --version
-        
-      - name: Build
-        run: swift build
-        
-      - name: Run Tests
-        run: swift test --parallel
-        
-  test-linux:
-    name: Linux Tests
-    runs-on: ubuntu-latest
-    container:
-      image: swift:6.0
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Swift Version
-        run: swift --version
-        
-      - name: Build
-        run: swift build
-        
-      - name: Run Tests
-        run: swift test --parallel
+    - name: Check package compatibility
+      run: |
+        swift package resolve
+        swift build
+        swift package dump-package
+        swift package show-dependencies
 
