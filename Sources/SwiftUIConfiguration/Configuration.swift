@@ -40,6 +40,10 @@ public struct Configuration<T: Sendable> : DynamicProperty {
     internal typealias _Context = [String: ConfigContextValue]
     internal typealias _ValueProvider = (ConfigReader, _Context, _UpdateHandler) async throws -> Void
     
+    final class _State {
+        var isListeningForUpdates: Bool = false
+    }
+    
     // MARK: - Public Type Aliases
     
     public typealias ContextProvider = (EnvironmentValues) -> [String: ConfigContextValue]
@@ -57,7 +61,7 @@ public struct Configuration<T: Sendable> : DynamicProperty {
     private let context: ContextProvider?
     private var value: _ValueProvider
     
-    @State private var isListeningForUpdates = false
+    private let state = _State()
     @State private var isLoading = false
     @State public var error: Error?
     @StateObject private var storage = _ConfigurationValueStorage<T>()
@@ -119,15 +123,15 @@ public struct Configuration<T: Sendable> : DynamicProperty {
     
     nonisolated public func update() {
         MainActor.assumeIsolated {
-            guard !isListeningForUpdates else { return }
-            isListeningForUpdates = true
+            guard !state.isListeningForUpdates else { return }
+            state.isListeningForUpdates = true
             
             Task {
                 do {
-                    try await listenForUpdates()
+                    try await self.listenForUpdates()
                 } catch {
                     self.error = error
-                    isListeningForUpdates = false
+                    self.state.isListeningForUpdates = false
                 }
             }
         }
