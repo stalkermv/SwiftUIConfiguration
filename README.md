@@ -219,9 +219,25 @@ struct PrivateKeyKey: ConfigurationKey {
 - **Arrays**: `[String]`, `[Int]`, `[Double]`, `[Bool]`
 - **Optional Arrays**: `[String]?`, `[Int]?`, `[Double]?`, `[Bool]?`
 
-## Provider Examples
+## Configuration Providers
 
-### Environment Variables
+SwiftUIConfiguration supports all providers from [swift-configuration](https://github.com/apple/swift-configuration#configuration-providers). Choose the provider that fits your needs:
+
+### Available Providers
+
+- **[EnvironmentVariablesProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/environmentvariablesprovider)** - Read from environment variables
+- **[CommandLineArgumentsProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/commandlineargumentsprovider)** - Parse command-line arguments  
+- **[JSONProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/jsonprovider)** / **[ReloadingJSONProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/reloadingjsonprovider)** - JSON files (with hot-reloading)
+- **[YAMLProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/yamlprovider)** / **[ReloadingYAMLProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/reloadingyamlprovider)** - YAML files (with hot-reloading)
+- **[DirectoryFilesProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/directoryfilesprovider)** - Directory of files (perfect for Docker/Kubernetes secrets)
+- **[InMemoryProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/inmemoryprovider)** / **[MutableInMemoryProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/mutableinmemoryprovider)** - In-memory values
+- **[KeyMappingProvider](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration/keymappingprovider)** - Transform keys
+
+> For complete provider documentation, see [Configuration Providers](https://github.com/apple/swift-configuration#configuration-providers) and the [Swift Package Index docs](https://swiftpackageindex.com/apple/swift-configuration/documentation/configuration#Built-in-providers).
+
+### Provider Examples
+
+#### Environment Variables
 
 ```swift
 let config = ConfigReader(provider: EnvironmentVariablesProvider())
@@ -232,7 +248,7 @@ Set via shell:
 export API_ENDPOINT="https://api.staging.com"
 ```
 
-### JSON File
+#### JSON File
 
 ```swift
 let config = ConfigReader(
@@ -240,30 +256,48 @@ let config = ConfigReader(
 )
 ```
 
-JSON file:
-```json
-{
-  "API_ENDPOINT": "https://api.example.com",
-  "API_TIMEOUT": 60
-}
+#### YAML with Hot-Reloading
+
+```swift
+let config = ConfigReader(
+    provider: try await ReloadingYAMLProvider(filePath: "/etc/myapp/config.yaml")
+)
+// Automatically reloads when file changes!
 ```
 
-### Provider Hierarchy
+#### Directory Files (Kubernetes/Docker Secrets)
+
+```swift
+let config = ConfigReader(
+    provider: try await DirectoryFilesProvider(directoryPath: "/run/secrets")
+)
+// Reads individual files: /run/secrets/api-key, /run/secrets/db-password
+```
+
+#### Provider Hierarchy
+
+Combine providers with fallback priority:
 
 ```swift
 let config = ConfigReader(providers: [
-    EnvironmentVariablesProvider(),           // Highest priority
-    try await JSONProvider(filePath: "config.json"),
-    InMemoryProvider(values: ["PORT": 8080])  // Lowest priority
+    EnvironmentVariablesProvider(),           // 1. Highest priority
+    try await JSONProvider(filePath: "config.json"),  // 2. Fallback to JSON
+    InMemoryProvider(values: ["PORT": 8080])  // 3. Defaults
 ])
 ```
 
+The first provider with a value wins. Perfect for environment-specific overrides!
+
 ## Documentation
 
-Full documentation is available in the DocC catalog. Build and view it in Xcode:
+Full documentation is available in the DocC catalog. 
 
+### View in Xcode
+Open `Package.swift` in Xcode, then go to **Product → Build Documentation** or press `⌃⌘D`.
+
+### Build from Command Line
 ```bash
-xcodebuild docbuild -scheme SwiftUIConfiguration
+swift package generate-documentation --target SwiftUIConfiguration
 ```
 
 ## Testing
