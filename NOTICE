@@ -1,0 +1,9 @@
+SwiftUIConfiguration
+Copyright (c) 2025 Valeriy Malishevskyi
+
+This project uses:
+
+- swift-configuration by Apple Inc.
+  https://github.com/apple/swift-configuration
+  Licensed under Apache License 2.0
+
